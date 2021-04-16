@@ -1,0 +1,28 @@
+{ "model": {"s":{"CNN":{"dimension": 15, "window_sizes": [1,2,3,4,5,6], "n_filters": 25, "nonlinear": "tanh"}, "High": {"layer": 1, "nonlinear": "relu"}, "LSTM": {"layer": 2, "h_units":300}},
+    "l":{"CNN":{"dimension": 15, "window_sizes": [1,2,3,4,5,6,7], "n_filters": [200, 50], "nonlinear": "tanh"}, "High": {"layer": 2, "nonlinear": "relu"}, "LSTM": {"layer": 2, "h_units":650}}},
+
+  "raw_data":
+    {"CS": ["./data/raw/CS/1m-mono/train.in", "./data/raw/CS/1m-mono/test.in", "./data/raw/CS/1m-mono/finaltest.in"],
+    "DE": ["./data/raw/DE/1m-mono/train.in", "./data/raw/DE/1m-mono/test.in", "./data/raw/DE/1m-mono/finaltest.in"],
+    "EN": ["./data/raw/EN/1m-mono/train.in", "./data/raw/EN/1m-mono/test.in", "./data/raw/EN/1m-mono/finaltest.in"],
+    "ES": ["./data/raw/ES/1m-mono/train.in", "./data/raw/ES/1m-mono/test.in", "./data/raw/ES/1m-mono/finaltest.in"],
+    "FR": ["./data/raw/FR/1m-mono/train.in", "./data/raw/FR/1m-mono/test.in", "./data/raw/FR/1m-mono/finaltest.in"],
+    "RU": ["./data/raw/RU/1m-mono/train.in", "./data/raw/RU/1m-mono/test.in", "./data/raw/RU/1m-mono/finaltest.in"],
+      "PTB": ["./data/raw/PTB/ptb.train.txt", "./data/raw/PTB/ptb.valid.txt", "./data/raw/PTB/ptb.test.txt"]
+    },
+
+  "preprocessed": "./data/preprocessed/",
+  "path_preprocessed": {"PTB": {"prepro": "./data/preprocessed/PTB/prepro.pkl", "char2id": "./data/preprocessed/PTB/char2id.pkl", "word2id": "./data/preprocessed/PTB/word2id.pkl"},
+                        "CS": {"prepro": "./data/preprocessed/CS/prepro.pkl", "char2id": "./data/preprocessed/CS/char2id.pkl", "word2id": "./data/preprocessed/CS/word2id.pkl"},
+                        "DE": {"prepro": "./data/preprocessed/DE/prepro.pkl", "char2id": "./data/preprocessed/DE/char2id.pkl", "word2id": "./data/preprocessed/DE/word2id.pkl"},
+                        "ES": {"prepro": "./data/preprocessed/ES/prepro.pkl", "char2id": "./data/preprocessed/ES/char2id.pkl", "word2id": "./data/preprocessed/ES/word2id.pkl"},
+                        "FR": {"prepro": "./data/preprocessed/FR/prepro.pkl", "char2id": "./data/preprocessed/FR/char2id.pkl", "word2id": "./data/preprocessed/FR/word2id.pkl"},
+                        "RU": {"prepro": "./data/preprocessed/RU/prepro.pkl", "char2id": "./data/preprocessed/RU/char2id.pkl", "word2id": "./data/preprocessed/RU/word2id.pkl"}},
+  "data_info": {"PTB":{"word_vocab": 10000, "char_vocab": 49, "max_word_len":19},
+                "CS": {"word_vocab": 46348, "char_vocab": 100},
+                "DE": {"word_vocab": 36601, "char_vocab": 73},
+                "ES": {"word_vocab": 27011, "char_vocab": 71},
+                "FR": {"word_vocab": 24985, "char_vocab": 75},
+                "RU": {"word_vocab": 63301, "char_vocab": 64}},
+  "train": {"bs": 20, "bptt": 35, "clip": 5, "drop_p": 0.5}
+}
