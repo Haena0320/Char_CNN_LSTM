@@ -3,7 +3,8 @@ sys.path.append(os.getcwd())
 from src.utils import *
 from src.train import *
 import torch
-from torch.utils.tensorboard import SummaryWriter 
+from torch.utils.tensorboard import SummaryWriter
+import numpy as np
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -14,11 +15,11 @@ parser.add_argument("--dataset", type=str, default="PTB")
 parser.add_argument("--config", type=str, default="default")
 parser.add_argument("--log", type=str, default="log")
 parser.add_argument("--gpu", type=int, default=None)
-parser.add_argument("--epochs", type=int, default=25)
+parser.add_argument("--epochs", type=int, default=100)
 
 parser.add_argument("--dropout_p", type=float, default=0.5)
 parser.add_argument("--optim", type=str, default="sgd")
-parser.add_argument("--learning_rate", type=float, default=0.01)
+parser.add_argument("--learning_rate", type=float, default=1)
 parser.add_argument("--use_earlystop", type=int, default=1)
 parser.add_argument("--use_batch_norm", type=int, default=0)
 
@@ -29,10 +30,8 @@ args = parser.parse_args()
 config = load_config(args.config)
 
 use_cuda = torch.cuda.is_available()
-device = "use_cuda {}".format(args.gpu) if use_cuda and args.gpu is not None else "cpu"
+device = torch.device("cuda:{}".format(args.gpu) if use_cuda and args.gpu is not None else "cpu")
 
-
-    
 assert args.model in ["s", "l"]
 assert args.dataset in ["PTB", "CS", "DE", "EN", "ES", "FR", "RU"]
 
@@ -77,29 +76,38 @@ dev_trainer = train.get_trainer(config, args, device, dev_loader, writer, type="
 test_trainer = train.get_trainer(config, args, device, test_loader, writer, type="test")
 
 optimizer = train.get_optimizer(model,args.optim)
-scheduler = train.get_lr_schedular(optimizer)
+#scheduler = train.get_lr_schedular(optimizer)
 
-trainer.init_optimizer(optimizer)
-trainer.init_schedular(scheduler)
+trainer.init_optimizer(model)
+#trainer.init_schedular(scheduler)
 
-early_stop_loss = []
-result = list()
-best_perpelxity = 10000
+early_stop_loss = list()
+perplexity_list = list()
 best_model_loc = oj(ckpnt_loc, "best_model.pkl")
-
+schedular = 0
+valid_ppl = [0,0,0]
 for epoch in range(1, args.epochs+1):
-    trainer.train_epoch(model, epoch)
-    valid_loss = dev_trainer.train_epoch(model, epoch, trainer.global_step)
-    early_stop_loss.append(valid_loss)
-    #if args.use_earlystop and early_stop_loss[-2] < early_stop_loss[-1]:
-    #    break
-    if dev_trainer.perplexity < best_perpelxity:
-        torch.save({"epoch":epoch,"model_stat_dict":model.state_dict()},best_model_loc)
+    print("{} epoch preprocessing ... ".format(epoch))
+    trainer.train_epoch(model, schedular)
+    valid_loss  = dev_trainer.train_epoch(model, schedular)
+    valid_ppl.append(torch.exp(valid_loss))
+    if (epoch > 1):
+        if valid_ppl[-2] < valid_ppl[-1]:
+            schedular = 1
+            print("learning rate halved ... epoch : {} | schedular : {}".format(epoch, schedular))
+        else:
+            pass
+    test_loss = test_trainer.train_epoch(model, schedular)
+    print("valid_ppl {} | test_ppl {}".format(torch.exp(valid_loss), torch.exp(test_loss)))
 
-best_model = torch.load(best_model_loc)
 
-for epoch in range(1, args.epoch+1):
-    test_trainer.train_epoch(best_model, epoch)
+    torch.save({"epoch":epoch,"model_stat_dict":model.state_dict()},ckpnt_loc+"model_ckpnt_{}.pkl".format(epoch))
+print("train finished !! ")
+
+# best_model = torch.load(best_model_loc)
+#
+# for epoch in range(1, args.epochs+1):
+#     test_trainer.train_epoch(best_model, epoch)
 
 
 

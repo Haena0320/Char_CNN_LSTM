@@ -52,10 +52,12 @@ def get_trainer(config, args, device, data_loader, log_writer, type):
 
 def get_optimizer(model, args_optim):
     if args_optim == "sgd":
-        return torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+        return torch.optim.SGD(model.parameters(), lr=1, momentum=0.9)
+    if args_optim == "adam":
+        return torch.optim.Adam(model.parameters(), lr=0.01, eps=1e-8, weight_decay=0.01)
 
 def get_lr_schedular(optimizer):
-    return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10, T_mult=1, eta_min=0.001, last_epoch=-1)
+   return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10, T_mult=1, eta_min=0, last_epoch=-1) # before eta_min = 0.00001
 
 class Trainer:
     def __init__(self, config, args, device, data_loader, writer, type):
@@ -71,49 +73,60 @@ class Trainer:
         self.loss_function = CrossEntropyLoss()
         self.global_step = 0
 
-    def init_optimizer(self, optimizer):
-        self.optimizer = optimizer
+    def init_optimizer(self, model):
+        self.optimizer_1 = torch.optim.SGD(model.parameters(), lr=1, momentum=0.9)
+        self.optimizer_2 = torch.optim.SGD(model.parameters(), lr=0.5, momentum=0.9)
 
-    def init_schedular(self, schedular):
-        self.schedular = schedular
+    #def init_schedular(self, schedular):
+    #    self.schedular = schedular
 
-    def train_epoch(self, model, epoch, global_step=None):
+    def train_epoch(self, model,scheduler):
         if self.type=="train":
             model.train()
         else:
             model.eval()
 
         model.to(self.device)
-        loss_save = list()
+        loss_save = 0
+        cnt =0
+        perplextiy_mean = 0
 
         for data in tqdm(self.data_loader):
+            cnt += 1
             x = data["data"].to(self.device)
             label = data["data_label"].to(self.device)
 
             y = model.forward(x)
             label = torch.flatten(label, start_dim=0, end_dim=1)
-            loss = self.loss_function(y, label)
+            #label = torch.unsqueeze(label, -1)
+            loss = self.loss_function(y, label) # y (batch_size(20), sequence_length(35), vocab_size(10000)) # label (batch_size(20), sequence_length(35))
 
             if self.type =="train":
-                self.optim_process(model, loss)
-                self.global_step +=1
-                self.write_log(loss, self.global_step)
+                self.global_step += 1
+                if scheduler:
+                    self.optim_process(model, loss, self.optimizer_2)
+                    self.write_log(loss, self.global_step, self.optimizer_2)
+                else:
+                    self.optim_process(model, loss, self.optimizer_1)
+                    self.write_log(loss, self.global_step, self.optimizer_1)
 
             else:
-                loss_save.append(loss)
-                self.perplexity = torch.exp(loss)
-                print("mode {} | perplexity {}".format(self.type, self.perplexity))
+                loss_save+=loss.data
+                
+        if self.type !="train":
+            return loss_save/cnt
 
-    def optim_process(self, model, loss):
-        self.optimizer.zero_grad()
+    def optim_process(self, model, loss, optimizer):
+        optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), self.config.train.clip)
-        self.optimizer.step()
-        self.schedular.step()
+        optimizer.step()
+        #self.schedular.step()
 
-    def write_log(self, loss, global_step):
+
+    def write_log(self, loss, global_step, optimizer):
         if self.type == "train":
-            lr = self.optimizer.param_groups[0]["lr"]
+            lr = optimizer.param_groups[0]["lr"]
             self.writer.add_scalar("train/loss", loss, global_step)
             self.writer.add_scalar("lr/loss", lr, global_step)
 

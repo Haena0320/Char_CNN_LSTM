@@ -22,8 +22,8 @@ assert args.dataset in ["PTB", "CS", "DE", "EN", "ES", "FR", "RU"]
 assert args.data_size in ["s", "l"]
 
 ## preprocessing code
-#dataset =["PTB", "CS", "DE", "EN", "ES", "FR", "RU"]
-dataset = ["FR"]
+dataset =["PTB", "CS", "DE", "EN", "ES", "FR", "RU"]
+#dataset = ["PTB"]
 for data in dataset:
     prepro = dict()
     files = config.raw_data[data]

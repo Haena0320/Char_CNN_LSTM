@@ -6,9 +6,11 @@ import torch
 def get_vocab(data_list, dataset):
     word2id = dict()
     char2id = dict()
-    word2id["<eos>"] = 0
+    word2id["+"] = 0
     char2id["<padding>"] = 0
-    w_id, c_id = 1, 1
+    char2id['{']=1
+    char2id["}"] = 2
+    w_id, c_id = 1, 3
     max_word_len = 0
     for data in data_list:
         f = open(data, encoding="utf-8")
@@ -25,6 +27,7 @@ def get_vocab(data_list, dataset):
                         char2id[c] = c_id
                         c_id += 1
     print("max_word_length {}".format(max_word_len))
+    print("char2id size {}".format(len(char2id.items())))
     return word2id, char2id, max_word_len
 
 
@@ -78,7 +81,6 @@ def load_data(dataset, f_names, debug=0):
         cut = len(d)%35
         d = d[:-cut]
         l = l[1:-cut+1]
-        print(len(d))
         d = np.array(d).reshape(-1, 35, max_word_len)
         l = np.array(l).reshape(-1, 35)
 

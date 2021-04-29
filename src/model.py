@@ -29,6 +29,7 @@ class Char_CNN(nn.Module):
 
         self.bs = config.train.bs
         self.bptt = config.train.bptt
+
         #stack layers
         self.emb = nn.Embedding(self.char_vocab, self.dimension, max_norm=0.05)
         self.feature_extractors = nn.ModuleList()
@@ -39,21 +40,17 @@ class Char_CNN(nn.Module):
                 nn.Sequential(nn.Conv2d(in_channels=1,
                                         out_channels=n_filter,
                                         kernel_size= (window_size, self.dimension), #(1, 15)
-                                        stride= (1, self.dimension), ## 한번에 볼 dimension 이랑 크기 같이 넣어줘야 함
-                                        padding=(self.p, 0)
-                                        ),
-                            nn.BatchNorm2d(n_filter) if self.use_batch_norm else nn.Dropout2d(self.dropout_p),
-                            nn.Tanh()))
+                                        stride= 1, ## 한번에 볼 dimension 이랑 크기 같이 넣어줘야 함
+                                        #padding=(self.p, 0),
+                                        bias=True),
+                              nn.Tanh()))
 
         self.highway = Highway(self.size, self.high_n)
         self.lstm = nn.LSTM(self.size, self.lstm_h_units, num_layers=self.lstm_n,dropout=self.dropout_p, batch_first=True)
-        self.fc = nn.Sequential(nn.Dropout2d(p=self.dropout_p),
-                                nn.SELU(),
-                                nn.Linear(self.lstm_h_units, self.word_vocab))
+        self.fc = nn.Sequential(nn.Dropout(), nn.Linear(self.lstm_h_units, self.word_vocab))
 
 
-
-    def forward(self, x): # x:(batch_size=20, sequence_length=35, max_word_length=19)
+    def forward(self, x): # x:(batch_size=20, sequence_length=35, max_word_length=21)
         x = torch.flatten(x, start_dim=0, end_dim=1) # x : ( batch_size * sequence_length, max_word_length)
         x = self.emb(x)  # x:(batch_size * sequence_length, max_word_length, char_embedding_dimension)
         x = x.unsqueeze(1) # x : (batch_size*sequence_length, 1, max_word_length, char_embedding_dimension)
@@ -93,19 +90,16 @@ class Highway(nn.Module):
         super(Highway, self).__init__()
         self.num_layers = num_layers
         self.nonlinear = nn.ModuleList([nn.Linear(size, size) for _ in range(num_layers)])
-        self.linear = nn.ModuleList([nn.Linear(size, size) for _ in range(num_layers)])
         self.gate = nn.ModuleList([nn.Linear(size, size) for _ in range(num_layers)])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=.5)
-
 
     def forward(self, x):
         for layer in range(self.num_layers):
             gate = F.sigmoid(self.gate[layer](x))
             nonlinear = self.relu(self.nonlinear[layer](x))
-            linear = self.linear[layer](x)
-            x = torch.mul(gate, nonlinear) + torch.mul((1-gate),linear)
-            x = self.dropout(x)
+
+            x = torch.mul(gate, nonlinear) + torch.mul((1 - gate), x)
         return x
 
 
