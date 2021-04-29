@@ -76,10 +76,11 @@ dev_trainer = train.get_trainer(config, args, device, dev_loader, writer, type="
 test_trainer = train.get_trainer(config, args, device, test_loader, writer, type="test")
 
 optimizer = train.get_optimizer(model,args.optim)
-#scheduler = train.get_lr_schedular(optimizer)
+shceduler = train.get_lr_schedular(optimizer)
 
-trainer.init_optimizer(model)
-#trainer.init_schedular(scheduler)
+
+trainer.init_optimizer(optimizer)
+trainer.init_scheduler(shceduler)
 
 early_stop_loss = list()
 perplexity_list = list()
@@ -93,15 +94,12 @@ for epoch in range(1, args.epochs+1):
     valid_ppl.append(torch.exp(valid_loss))
     if (epoch > 1):
         if valid_ppl[-2] < valid_ppl[-1]:
-            schedular = 1
+            schedular += 1
             print("learning rate halved ... epoch : {} | schedular : {}".format(epoch, schedular))
-        else:
-            pass
+
     test_loss = test_trainer.train_epoch(model, schedular)
     print("valid_ppl {} | test_ppl {}".format(torch.exp(valid_loss), torch.exp(test_loss)))
 
-
-    torch.save({"epoch":epoch,"model_stat_dict":model.state_dict()},ckpnt_loc+"model_ckpnt_{}.pkl".format(epoch))
 print("train finished !! ")
 
 # best_model = torch.load(best_model_loc)

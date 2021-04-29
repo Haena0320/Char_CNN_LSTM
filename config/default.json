@@ -18,11 +18,11 @@
                         "ES": {"prepro": "./data/preprocessed/ES/prepro.pkl", "char2id": "./data/preprocessed/ES/char2id.pkl", "word2id": "./data/preprocessed/ES/word2id.pkl"},
                         "FR": {"prepro": "./data/preprocessed/FR/prepro.pkl", "char2id": "./data/preprocessed/FR/char2id.pkl", "word2id": "./data/preprocessed/FR/word2id.pkl"},
                         "RU": {"prepro": "./data/preprocessed/RU/prepro.pkl", "char2id": "./data/preprocessed/RU/char2id.pkl", "word2id": "./data/preprocessed/RU/word2id.pkl"}},
-  "data_info": {"PTB":{"word_vocab": 10000, "char_vocab": 49, "max_word_len":19},
-                "CS": {"word_vocab": 46348, "char_vocab": 100},
-                "DE": {"word_vocab": 36601, "char_vocab": 73},
-                "ES": {"word_vocab": 27011, "char_vocab": 71},
-                "FR": {"word_vocab": 24985, "char_vocab": 75},
-                "RU": {"word_vocab": 63301, "char_vocab": 64}},
+  "data_info": {"PTB":{"word_vocab": 10000, "char_vocab": 51, "max_word_len":19},
+                "CS": {"word_vocab": 46348, "char_vocab": 102, "max_word_len": 77},
+                "DE": {"word_vocab": 36601, "char_vocab": 75, "max_word_len": 37},
+                "ES": {"word_vocab": 27011, "char_vocab": 73, "max_word_len": 21},
+                "FR": {"word_vocab": 24985, "char_vocab": 77, "max_word_len": 28},
+                "RU": {"word_vocab": 63301, "char_vocab": 69, "max_word_len": 58}},
   "train": {"bs": 20, "bptt": 35, "clip": 5, "drop_p": 0.5}
 }

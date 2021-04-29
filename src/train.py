@@ -57,7 +57,20 @@ def get_optimizer(model, args_optim):
         return torch.optim.Adam(model.parameters(), lr=0.01, eps=1e-8, weight_decay=0.01)
 
 def get_lr_schedular(optimizer):
-   return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10, T_mult=1, eta_min=0, last_epoch=-1) # before eta_min = 0.00001
+   return WarmupScheduler(optimizer)
+
+class WarmupScheduler(object):
+    def __init__(self,optimizer):
+        self.optimizer = optimizer
+        self.lr = 1
+    def step(self, schedule, s_cnt):
+        if s_cnt == 1:
+            if schedule:
+                lr = self.lr*(0.5**schedule)
+                print(lr)
+                for g in self.optimizer.param_groups:
+                    g["lr"] = lr
+
 
 class Trainer:
     def __init__(self, config, args, device, data_loader, writer, type):
@@ -73,14 +86,13 @@ class Trainer:
         self.loss_function = CrossEntropyLoss()
         self.global_step = 0
 
-    def init_optimizer(self, model):
-        self.optimizer_1 = torch.optim.SGD(model.parameters(), lr=1, momentum=0.9)
-        self.optimizer_2 = torch.optim.SGD(model.parameters(), lr=0.5, momentum=0.9)
+    def init_optimizer(self, optimizer):
+        self.optimizer = optimizer
 
-    #def init_schedular(self, schedular):
-    #    self.schedular = schedular
+    def init_scheduler(self, scheduler):
+        self.scheduler = scheduler
 
-    def train_epoch(self, model,scheduler):
+    def train_epoch(self, model, schedule):
         if self.type=="train":
             model.train()
         else:
@@ -89,7 +101,6 @@ class Trainer:
         model.to(self.device)
         loss_save = 0
         cnt =0
-        perplextiy_mean = 0
 
         for data in tqdm(self.data_loader):
             cnt += 1
@@ -98,17 +109,12 @@ class Trainer:
 
             y = model.forward(x)
             label = torch.flatten(label, start_dim=0, end_dim=1)
-            #label = torch.unsqueeze(label, -1)
             loss = self.loss_function(y, label) # y (batch_size(20), sequence_length(35), vocab_size(10000)) # label (batch_size(20), sequence_length(35))
 
             if self.type =="train":
                 self.global_step += 1
-                if scheduler:
-                    self.optim_process(model, loss, self.optimizer_2)
-                    self.write_log(loss, self.global_step, self.optimizer_2)
-                else:
-                    self.optim_process(model, loss, self.optimizer_1)
-                    self.write_log(loss, self.global_step, self.optimizer_1)
+                self.optim_process(model, loss, schedule, cnt)
+                self.write_log(loss, self.global_step, self.optimizer)
 
             else:
                 loss_save+=loss.data
@@ -116,12 +122,13 @@ class Trainer:
         if self.type !="train":
             return loss_save/cnt
 
-    def optim_process(self, model, loss, optimizer):
-        optimizer.zero_grad()
+    def optim_process(self, model, loss, schedule, s_cnt):
+        self.scheduler.step(schedule, s_cnt)
+        self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), self.config.train.clip)
-        optimizer.step()
-        #self.schedular.step()
+        self.optimizer.step()
+
 
 
     def write_log(self, loss, global_step, optimizer):

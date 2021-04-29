@@ -12,7 +12,6 @@ class Char_CNN(nn.Module):
         lstm_info = config.model[args.model]["LSTM"]
         data_info = config.data_info[args.dataset]
 
-
         self.mode = args.model
         self.dimension = cnn_info["dimension"]
         self.filter_list, self.size = self.make_filter(cnn_info["window_sizes"], cnn_info["n_filters"])
